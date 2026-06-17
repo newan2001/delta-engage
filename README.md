@@ -1,6 +1,12 @@
 # delta-engage
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill-d97757)](https://docs.claude.com/en/docs/claude-code)
+![Stars](https://img.shields.io/github/stars/newan2001/delta-engage?style=social)
+
 **A Claude Code skill that finds high-fit posts to engage with across Reddit and LinkedIn — based on who actually *needs* what you do — and drafts a comment for each, in your voice.**
+
+![delta-engage](https://newanv.com/og-delta-engage.png)
 
 It automates the *logistics* of social engagement (discovery, ranking, context, a draft) and hands you a twice-weekly digest you can action in ~15 minutes. **You always write the final comment and post it manually from your own account** — the skill never posts for you.
 
@@ -21,6 +27,55 @@ Most "social listening" surfaces whoever *talks about* your topic — which is m
 - **BYOK.** Your own Apify token runs everything. No shared keys, no lock-in.
 
 ---
+
+## What you get
+
+Every run hands you a digest like this — the post link, a one-line angle, and a **ready-to-edit comment** per pick — split into people to engage (your ICP) and peers worth a relationship:
+
+```
+🎯 Engagement digest — Thu 18 Jun 2026  ·  2 to engage · 1 partnership
+
+ENGAGE (your ICP)
+
+1. [REDDIT] r/ExperiencedDevs · fit 9/10 · buyer · 4h ago
+   Our oncall is burning people out — how do you actually fix alert fatigue?
+   https://www.reddit.com/r/ExperiencedDevs/comments/1abc234/oncall_burnout_alert_fatigue/
+   ↑142 · 38 comments
+   Why it cleared the bar: Squarely your ICP, voicing the exact pain you solve.
+   Angle (question-led): Get them to the one noisy alert source before any tooling.
+
+   Comment (edit before posting):
+   > The fix that worked for us wasn't a new tool — it was deleting the ~40% of
+   > alerts that never led to action, then routing the rest by severity. What's
+   > your noisiest alert source right now, and does anyone own tuning it?
+   ⚠️ Safety: r/ExperiencedDevs — no tools/links; keep it experience-led, personalize before posting.
+
+2. [LINKEDIN] @priya-narayan · fit 7/10 · kol · 9h ago
+   "Reliability isn't a tooling problem, it's an ownership problem." 🧵
+   https://www.linkedin.com/posts/priya-narayan_sre-reliability-activity-7480000000000000000-Qw3z
+   ↑310 · 54 comments
+   Why it cleared the bar: High-reach voice in your space; a sharp add builds brand.
+   Angle (respectful-challenge): Agree, then add the missing half — ownership needs a feedback loop.
+
+   Comment (edit before posting):
+   > Strongly agree on ownership. The piece I'd add: ownership without a weekly
+   > review of what actually paged you just becomes blame. The teams that get this
+   > right close the loop, not just assign it.
+
+🤝 PEERS & PARTNERSHIPS  (relationship plays — engage, don't pitch)
+
+3. [LINKEDIN] @devtools-dan (Acme Observability) · fit 4/10 · peer · 1d ago
+   "Why we rebuilt our alerting from scratch — lessons for SRE teams."
+   https://www.linkedin.com/posts/devtools-dan_sre-alerting-activity-7479000000000000000-Lk9p
+   ↑88 · 12 comments
+   Why it cleared the bar: Adjacent vendor, not a buyer — worth a relationship, not a pitch.
+
+   Comment: Genuinely good breakdown — the severity-routing part matches what we see. Would love to compare notes sometime.
+
+— Reply manually from your own account. Don't paste comments verbatim (esp. Reddit). —
+```
+
+*(Illustrative example with fabricated posts — your real digest is built from live Reddit/LinkedIn data and your ICP.)*
 
 ## Install
 
