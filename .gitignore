@@ -1,0 +1,19 @@
+# Personal config & run artifacts — NEVER ship these (contain real ICP/run data)
+config.json
+raw_*.json
+signals.json
+ranked.json
+top.json
+angles.json
+digest.md
+*.local.json
+voice_*.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# OS
+.DS_Store
+Thumbs.db
