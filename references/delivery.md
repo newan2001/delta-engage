@@ -18,9 +18,11 @@ onboard  →  first run LIVE in chat (user sees value)  →  set up a ROUTINE
 
 ## Setting up the routine (do this at onboarding close, after the first live run)
 
-Use the **`/schedule`** capability to create a recurring routine:
-- **Action:** run `/delta-engage` (it reads `config.json` for platforms, topics, and delivery).
-- **Cron** from `config.cadence`:
+Each project gets its **own** scheduled task (multi-project) — name it `delta-engage-<slug>` so
+projects don't collide. Use the persistent `create_scheduled_task` (`/schedule`):
+- **Action:** run **`/delta-engage <slug>`** (it resolves that project's config — platforms,
+  topics, delivery — and writes to its own `runs/` dir).
+- **Cron** from that project's `config.cadence`:
   - `mon_thu` → e.g. `0 8 * * 1,5` (Mon & Thu 08:00 user-local)
   - `weekly`  → e.g. `0 8 * * 1` (Mon 08:00)
   - custom    → translate the user's words to cron.

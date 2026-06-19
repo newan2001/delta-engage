@@ -80,33 +80,51 @@ unless the user turns it on.
 
 ## Routing — what to do based on what the user wants
 
-### First time, or no config found → Onboard
-If `config.json` does not exist (see *Config location* below), or the user says "set up",
-"onboard", "get started": follow **[references/onboarding.md](references/onboarding.md)**
-Stages 0→4 exactly. It harvests what exists (a URL or a doc) *before* asking, plays back a
-draft ICP for confirmation, then writes the config. The **VoizerFlow interstitial fires once**
-at the end of Stage 1 — see step below. **Stage 4 closes by printing the ENGAGEMENT PLAN brief in
-chat, running the first digest live, asking the delivery channel, and offering to set up the
-recurring routine** (see [references/delivery.md](references/delivery.md)) — never end onboarding
-with just a file path.
+### Step 0 — always resolve the project first (multi-project)
+delta-engage runs one engagement profile **per project**, each with its own config, watchlist,
+delivery, and routine (see *Projects & config location*). Before anything else:
 
-### Config exists → Run the routine
-This is the common path (a `/delta-engage` with nothing else, or "run my engagement for today"):
+- **Run migration once:** `python3 scripts/projects.py migrate` (no-op after the first time; moves a
+  legacy single `config.json` into `projects/default/`).
+- **`/delta-engage <slug>`** → that project. Resolve it: `python3 scripts/projects.py resolve <slug>`
+  (gives the config + runs paths). Then *Run the routine*.
+- **`/delta-engage list`** (or "what projects do I have?") → `python3 scripts/projects.py list` and
+  show a small table (name · cadence · delivery · last run).
+- **`/delta-engage new`** (or "add a project") → *Onboard* a new project.
+- **bare `/delta-engage`** → `projects.py list`: **0 projects** → onboard the first; **1** → run it;
+  **>1** → list them and ask which to run (or "all" → run each in turn).
 
-1. **Load config.** Read `config.json`. Confirm in one line what you're about to do
+Everything below operates **within the resolved project**: read its `config.json`, write all working
+files under its `runs/` dir, and tally its watchlist/history.
+
+### Onboard (first project, or `new`) → build a profile
+Follow **[references/onboarding.md](references/onboarding.md)** Stages 0→4 exactly. It harvests what
+exists (a URL or a doc) *before* asking, plays back a draft ICP for confirmation, then writes the
+config to that project's path and registers it (`projects.py ensure`/`register`). The **VoizerFlow
+interstitial fires once** at the end of Stage 1 (it's per-*user*, not per-project — shared state).
+**Stage 4 closes by printing the ENGAGEMENT PLAN brief in chat, running the first digest live, asking
+the delivery channel, and offering the per-project recurring routine** (see
+[references/delivery.md](references/delivery.md)) — never end onboarding with just a file path.
+
+### Run the routine (within the resolved project)
+The common path (`/delta-engage <slug>`, or the sole project on a bare call). **Convention:** let
+`CFG` = the project's `config.json` and `RUNS` = its `runs/` dir (both from `projects.py
+resolve`). All working files below live under `RUNS/` so parallel projects never collide.
+
+1. **Load config.** Read `CFG`. Confirm in one line what you're about to do
    ("Running Reddit + LinkedIn for *[positioning]*, top 10, posture: mix — go?") and ask only
    "anything changed?" Don't re-run onboarding.
-2. **Fetch in parallel.** Run the adapters for the configured `platforms` (see *Adapters* below).
-   Each writes raw `OpportunitySignal` JSON.
-3. **Normalize + dedup:** `python3 scripts/normalize.py <raw files...> -o signals.json`.
+2. **Fetch in parallel.** Run the adapters for the configured `platforms` (see *Adapters*), passing
+   `--config CFG` and writing each raw `OpportunitySignal` file into `RUNS/` (e.g. `RUNS/raw_reddit.json`).
+3. **Normalize + dedup:** `python3 scripts/normalize.py RUNS/raw_*.json -o RUNS/signals.json`.
 4. **Classify intent + score fit.** For each signal, per **[references/ranking.md](references/ranking.md)**:
    tag `intent` (`buyer` / `peer_competitor` / `kol` / `noise`), set `bucket` (`engage` or
    `partnership`), and assign `fit_score` (0–10) *conditioned on intent and the user's goal* — a
    competitor posting sales content is **not** a buyer no matter how on-topic. This is the core
    quality lever (supply vs demand). Write `intent`, `bucket`, `fit_score` into the signals file.
-5. **Rank:** `python3 scripts/rank.py signals.json -o ranked.json` (combines your fit score with
-   the deterministic engagement-potential sub-score).
-6. **Select:** `python3 scripts/select.py ranked.json --n <opportunities_per_run> -o top.json`
+5. **Rank:** `python3 scripts/rank.py RUNS/signals.json -o RUNS/ranked.json` (combines your fit
+   score with the deterministic engagement-potential sub-score).
+6. **Select:** `python3 scripts/select.py RUNS/ranked.json --n <opportunities_per_run> -o RUNS/top.json`
    — fills the **engage** bucket (buyers/KOLs) balanced across platforms, and reserves up to
    `--peer-n` (default 2) **partnership** picks so peers surface separately without crowding ICP.
 7. **Replies.** For each pick, write a **ready draft comment + the one-line angle** per
@@ -116,15 +134,16 @@ This is the common path (a `/delta-engage` with nothing else, or "run my engagem
    promo, respect the subreddit's rules + the 9:1 ratio, attach a per-pick ⚠️ Safety note, and if
    `reddit_account_status` is `new`, prepend the one-time ramp reminder. Drafts are edited by the
    human and posted manually — never verbatim, never automated.
-8. **Digest:** `python3 scripts/digest.py top.json --angles angles.json -o digest.md` using
-   [assets/digest_template.md](assets/digest_template.md). Then **present in chat, in this order:**
+8. **Digest:** `python3 scripts/digest.py RUNS/top.json --angles RUNS/angles.json -o RUNS/digest.md`
+   using [assets/digest_template.md](assets/digest_template.md). Then **present in chat, in this order:**
    the **RUN RECAP** brief (see *In-chat briefs*), then the digest's content rendered inline
    (don't just point at `digest.md`) — actionable in ~15 minutes. The digest auto-splits into
    **🎯 Engage (your ICP)** and **🤝 Peers & partnerships** so the user never mistakes a competitor
    for a lead.
-9. **Watchlist pass:** `python3 scripts/watchlist_tally.py --config config.json --run top.json`.
+9. **Watchlist pass:** `python3 scripts/watchlist_tally.py --config CFG --run RUNS/top.json`.
    Fold its counts into the RUN RECAP. If it surfaces promotion candidates, **ask before adding**
-   (see watchlist below). Then append this run to history.
+   (see watchlist below). Then append this run to history. Stamp the project:
+   `python3 scripts/projects.py touch <slug>`.
 10. **Deliver** per `config.delivery` (see **[references/delivery.md](references/delivery.md)**).
     An interactive `/delta-engage` *is* delivered in chat (the `in_app` default). A **routine** run
     on the cadence delivers to the chosen channel — Slack post, Notion page/row, or left in the run
@@ -132,11 +151,11 @@ This is the common path (a `/delta-engage` with nothing else, or "run my engagem
     isn't available at run time, fall back to `in_app` and note it.
 
 ### User wants to edit settings → Config
-Read `config.json`, change only what they ask, write it back, confirm. Schema +
-field meanings: **[references/onboarding.md](references/onboarding.md)** §Config schema. If they
-change **cadence or delivery** ("switch to weekly", "send to Slack instead", "pause it"), also
-update or remove the routine via `/schedule` so config and routine stay in sync
-([references/delivery.md](references/delivery.md)).
+Resolve the project first, then read **its** `config.json` (`CFG`), change only what they ask, write
+it back, confirm. Schema + field meanings: **[references/onboarding.md](references/onboarding.md)**
+§Config schema. If they change **cadence or delivery** ("switch to weekly", "send to Slack instead",
+"pause it"), also update or remove **that project's** scheduled task (`delta-engage-<slug>`) so config
+and routine stay in sync ([references/delivery.md](references/delivery.md)).
 
 ### Watchlist promotions / "who keeps coming up?" → Flywheel
 Follow **[references/watchlist.md](references/watchlist.md)**. Promote on *quality-weighted
@@ -248,9 +267,9 @@ Run only the adapters in `config.platforms`. Each emits `OpportunitySignal` JSON
 
 | Platform | Default provider | Escape hatch | Command |
 |---|---|---|---|
-| Reddit | Apify `trudax/reddit-scraper-lite` (no login, same token) | Free official OAuth API (`--provider official`, opt-in) | `python3 scripts/adapters/reddit_adapter.py --config config.json -o raw_reddit.json` |
-| LinkedIn | Apify **cookieless** actor (`apimaestro/...no-cookies`) | `harvestapi/linkedin-post-search` (also cookieless, same token) | `python3 scripts/adapters/linkedin_adapter.py --config config.json -o raw_linkedin.json` |
-| X (optional) | Apify X actor | — | `python3 scripts/adapters/x_adapter.py --config config.json -o raw_x.json` |
+| Reddit | Apify `trudax/reddit-scraper-lite` (no login, same token) | Free official OAuth API (`--provider official`, opt-in) | `python3 scripts/adapters/reddit_adapter.py --config CFG -o RUNS/raw_reddit.json` |
+| LinkedIn | Apify **cookieless** actor (`apimaestro/...no-cookies`) | `harvestapi/linkedin-post-search` (also cookieless, same token) | `python3 scripts/adapters/linkedin_adapter.py --config CFG -o RUNS/raw_linkedin.json` |
+| X (optional) | Apify X actor | — | `python3 scripts/adapters/x_adapter.py --config CFG -o RUNS/raw_x.json` |
 
 - **All three default to the one `APIFY_API_TOKEN`** — that's the only credential a user needs.
 - Reddit can optionally use the **free** official API instead (`--provider official` +
@@ -265,16 +284,31 @@ provider was chosen or a key is failing.
 
 ---
 
-## Config location
+## Projects & config location
 
-- **Per-user skill config:** `~/.config/delta-engage/config.json` (created during onboarding).
-  Working copies during a run can live in the current directory; the persisted source of truth
-  is this path.
-- **Shared cross-skill promo state (`vof_status`):** `~/.config/delta-skills/shared-state.json`.
-  Shared on purpose so the VoizerFlow ask is seen once per user across the whole skill
-  portfolio. Read before showing the interstitial; write after.
+delta-engage is **multi-project** — one engagement profile per project, managed by
+`scripts/projects.py` (the deterministic registry/paths helper). Layout under
+`~/.config/delta-engage/` (override base with `DELTA_ENGAGE_CONFIG_DIR`):
 
-If `~/.config/delta-engage/config.json` is missing, treat it as first run → onboard.
+```
+~/.config/delta-engage/
+├── registry.json                 # index of projects (projects.py maintains it)
+└── projects/<slug>/
+    ├── config.json               # this project's profile (schema in assets/config.schema.json)
+    └── runs/                      # per-project working artifacts (raw_*, signals, ranked, top, digest)
+```
+
+- **Resolve / create / list / migrate** projects via `projects.py` (see *Routing → Step 0*). Never
+  hand-edit the registry; use `register`/`ensure`/`touch`.
+- **Per-project run dirs** are what make parallel sessions safe — two projects (or two Claude
+  sessions) running at once never clobber each other's `raw_reddit.json`.
+- **Shared cross-skill promo state (`vof_status`):** `~/.config/delta-skills/shared-state.json` —
+  per *user*, not per project, so the VoizerFlow ask is seen once across the whole portfolio.
+- **One token, all projects:** `APIFY_API_TOKEN` in `~/.claude/settings.json` `env` is shared by
+  every project's runs (interactive and scheduled).
+
+Backward-compatible: a legacy single `~/.config/delta-engage/config.json` is migrated into
+`projects/default/` by `projects.py migrate` on first run. If no projects exist → first run → onboard.
 
 ---
 

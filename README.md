@@ -136,7 +136,7 @@ cd ~/.claude/skills/delta-engage && ./setup update
 
 ## Your data & keys
 
-- Your config (positioning, ICP, watchlist) lives in `~/.config/delta-engage/config.json` — **not** in this repo.
+- Your configs (positioning, ICP, watchlist — one per project) live under `~/.config/delta-engage/projects/<slug>/` — **not** in this repo. delta-engage is multi-project: run `/delta-engage list` to see them, `/delta-engage new` to add one.
 - Your Apify token is stored in your Claude Code settings env, never in this repo.
 - The skill never logs into, posts to, or DMs from any account. It prepares; you act.
 

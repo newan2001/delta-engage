@@ -4,6 +4,8 @@
   "type": "object",
   "required": ["positioning", "icp", "platforms", "opportunities_per_run"],
   "properties": {
+    "slug": { "type": "string", "description": "project slug (kebab-case); dir name under projects/" },
+    "name": { "type": "string", "description": "project display name" },
     "positioning": { "type": "string", "description": "one-line what-you-do" },
     "icp": {
       "type": "object",

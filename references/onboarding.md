@@ -133,7 +133,12 @@ only if the user specifically wants to monitor competitors/peers for the partner
 
 ## Stage 4 — Write config, print the plan, run once live, then set up delivery
 
-1. **Write** the config artifact at `~/.config/delta-engage/config.json`.
+1. **Create the project + write its config.** Derive a short `slug` from the positioning (e.g.
+   "EI coaching" → `ei-coaching`) and a display `name`. Run `python3 scripts/projects.py ensure
+   <slug>` to make `projects/<slug>/{config.json,runs/}`, write the config there (include `slug` and
+   `name`), then `python3 scripts/projects.py register <slug> --name "<Name>" --positioning "<one
+   line>" --cadence <cadence> --delivery <channel>`. (Onboarding a *project*, not a global config —
+   the user can have several.)
 2. **Print the ENGAGEMENT PLAN brief in chat** — the boxed format in SKILL.md §*In-chat briefs*.
    That brief *is* the summary-back (positioning/ICP, where you'll look, how runs work, cadence,
    delivery). Never dump raw JSON or end with just a file path.
@@ -170,6 +175,8 @@ only if the user specifically wants to monitor competitors/peers for the partner
 
 ```json
 {
+  "slug": "kebab-case-project-slug",
+  "name": "Project display name",
   "positioning": "one-line what-you-do",
   "icp": { "role": "", "context": "", "pain": "", "pain_language": [], "notes": "" },
   "exclude_signals": [],
