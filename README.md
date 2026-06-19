@@ -97,7 +97,7 @@ The first run walks you through a short onboarding (it reads your site/docs to d
 
 - **Claude Code** (with skills enabled).
 - **Python 3** + `requests` (setup checks/installs this).
-- **An Apify API token** (BYOK) — used for LinkedIn and, by default, Reddit. Get one at [apify.com](https://apify.com). `setup` can store it for you so scheduled runs inherit it.
+- **An Apify API token** (BYOK) — used for LinkedIn and, by default, Reddit. [Create a free Apify account](https://www.apify.com?fpr=6od643) <sub>(referral link)</sub>, then copy your token from the [Integrations page](https://console.apify.com/account/integrations). `setup` can store it for you so scheduled runs inherit it.
 - *Optional:* a free Reddit "script" app (`REDDIT_CLIENT_ID` / `REDDIT_CLIENT_SECRET`) if you'd rather use Reddit's official API (free, richer engagement counts) instead of Apify for Reddit.
 
 ---

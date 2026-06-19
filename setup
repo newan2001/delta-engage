@@ -51,8 +51,9 @@ if [ -n "${APIFY_API_TOKEN:-}" ]; then
 elif [ -t 0 ]; then
   say ""
   say "delta-engage needs an Apify API token (BYOK) for LinkedIn + Reddit."
-  say "Get one at https://console.apify.com/account/integrations — paste it to store it"
-  say "in $SETTINGS (env), or press Enter to skip and set it later."
+  say "No account yet? Create one free: https://www.apify.com?fpr=6od643"
+  say "Then copy your token from https://console.apify.com/account/integrations and paste it"
+  say "here to store it in $SETTINGS (env), or press Enter to skip and set it later."
   printf "  APIFY_API_TOKEN (hidden): "
   stty -echo 2>/dev/null || true
   read -r TOKEN || TOKEN=""

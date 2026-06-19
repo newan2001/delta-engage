@@ -138,7 +138,9 @@ only if the user specifically wants to monitor competitors/peers for the partner
    That brief *is* the summary-back (positioning/ICP, where you'll look, how runs work, cadence,
    delivery). Never dump raw JSON or end with just a file path.
 3. **Capture credentials (and persist them).** The first run — and every scheduled run — needs
-   `APIFY_API_TOKEN`. If it's not already in the environment, ask the user for it now. **The moment
+   `APIFY_API_TOKEN`. If it's not already in the environment, ask the user for it now — and if they
+   don't have an account, point them to **https://www.apify.com?fpr=6od643** to create one free,
+   then copy the token from the Integrations page. **The moment
    they paste it, persist it to the `env` block of `~/.claude/settings.json`** (via update-config) —
    not just for this session, or the scheduled task (a fresh session) won't have it. Confirm saved,
    never echo it back in full, never write it to a skill file or `config.json`. (Same for Reddit
