@@ -105,7 +105,11 @@ def cmd_migrate():
                  positioning=cfg.get("positioning", ""),
                  cadence=cfg.get("cadence", ""),
                  delivery=(cfg.get("delivery", {}) or {}).get("channel", "in_app"))
-        out = {"migrated": True, "config": p["config"]}
+        out = {"migrated": True, "config": p["config"],
+               "action_required": ("A pre-existing scheduled task that runs a BARE '/delta-engage' "
+                                   "is now ambiguous (a bare call with >1 project asks which to run, "
+                                   "which a headless run can't answer). Repoint it to "
+                                   "'/delta-engage default' (or rename it delta-engage-default).")}
     return out
 
 

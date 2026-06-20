@@ -45,7 +45,7 @@ def _age_str(ts: str) -> str:
     return f"{hrs/24:.0f}d ago"
 
 
-def render(top, angles):
+def render(top, angles, intel=""):
     import sys
     sys.path.insert(0, os.path.dirname(__file__))
 
@@ -98,6 +98,12 @@ def render(top, angles):
                  "_Not buyers — other practitioners/competitors worth a relationship or collab, "
                  "not a pitch. Engage to start a conversation._\n\n"
                  + "\n\n".join(block(i, s) for i, s in enumerate(partners, len(engage) + 1)))
+    if intel.strip():
+        # competitor intel: a model-written synthesis of what competitors/peers are posting —
+        # a byproduct of keyword search worth capturing (not an engagement target).
+        body += ("\n\n## 🔭 Competitor intel\n"
+                 "_What competitors/peers are putting out — positioning, offers, claims, gaps. "
+                 "Intelligence, not outreach._\n\n" + intel.strip())
     return (template
             .replace("{{DATE}}", today)
             .replace("{{COUNT}}", str(len(top)))
@@ -109,6 +115,7 @@ def main():
     ap = argparse.ArgumentParser(description="render the engagement digest")
     ap.add_argument("input", help="top.json (selected set)")
     ap.add_argument("--angles", help="angles.json (model-written); optional")
+    ap.add_argument("--intel", help="markdown file: model-written competitor-intel synthesis; optional")
     ap.add_argument("-o", "--output", required=True)
     args = ap.parse_args()
 
@@ -118,8 +125,12 @@ def main():
     if args.angles and os.path.exists(args.angles):
         with open(args.angles) as f:
             angles = json.load(f)
+    intel = ""
+    if args.intel and os.path.exists(args.intel):
+        with open(args.intel) as f:
+            intel = f.read()
 
-    md = render(top, angles)
+    md = render(top, angles, intel)
     with open(args.output, "w") as f:
         f.write(md)
     print(f"[digest] wrote {len(top)} opportunities → {args.output}")

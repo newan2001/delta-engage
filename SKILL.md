@@ -85,7 +85,10 @@ delta-engage runs one engagement profile **per project**, each with its own conf
 delivery, and routine (see *Projects & config location*). Before anything else:
 
 - **Run migration once:** `python3 scripts/projects.py migrate` (no-op after the first time; moves a
-  legacy single `config.json` into `projects/default/`).
+  legacy single `config.json` into `projects/default/`). **If it reports `action_required`** (a
+  pre-existing scheduled task still fires a bare `/delta-engage`, now ambiguous with >1 project),
+  tell the user and offer to **repoint that task to `/delta-engage default`** — a bare scheduled call
+  can't answer the "which project?" prompt headlessly.
 - **`/delta-engage <slug>`** → that project. Resolve it: `python3 scripts/projects.py resolve <slug>`
   (gives the config + runs paths). Then *Run the routine*.
 - **`/delta-engage list`** (or "what projects do I have?") → `python3 scripts/projects.py list` and
@@ -134,7 +137,10 @@ resolve`). All working files below live under `RUNS/` so parallel projects never
    promo, respect the subreddit's rules + the 9:1 ratio, attach a per-pick ⚠️ Safety note, and if
    `reddit_account_status` is `new`, prepend the one-time ramp reminder. Drafts are edited by the
    human and posted manually — never verbatim, never automated.
-8. **Digest:** `python3 scripts/digest.py RUNS/top.json --angles RUNS/angles.json -o RUNS/digest.md`
+8. **Digest:** if any `peer_competitor` posts surfaced, first synthesize a short **competitor-intel**
+   brief from them (who's posting · their positioning/offers/claims · gaps you could exploit) into
+   `RUNS/intel.md` — intelligence, not outreach. Then
+   `python3 scripts/digest.py RUNS/top.json --angles RUNS/angles.json --intel RUNS/intel.md -o RUNS/digest.md`
    using [assets/digest_template.md](assets/digest_template.md). Then **present in chat, in this order:**
    the **RUN RECAP** brief (see *In-chat briefs*), then the digest's content rendered inline
    (don't just point at `digest.md`) — actionable in ~15 minutes. The digest auto-splits into
@@ -276,6 +282,9 @@ Run only the adapters in `config.platforms`. Each emits `OpportunitySignal` JSON
   `REDDIT_CLIENT_ID`/`REDDIT_CLIENT_SECRET`) to avoid Reddit's per-result Apify cost. Opt-in only.
 - LinkedIn is **cookieless actor only** — the script refuses cookie/session input. Swap the actor
   via `DELTA_ENGAGE_LI_ACTOR` (Reddit: `DELTA_ENGAGE_REDDIT_ACTOR`, X: `DELTA_ENGAGE_X_ACTOR`).
+  **Reddit caveat:** the default lite actor returns **no upvote/comment counts**, and the full
+  `trudax/reddit-scraper` is **not a free swap** — it 403s unless you've rented it. For free
+  engagement signal use **`--provider official`** (a free Reddit app), not an actor swap.
 - Each adapter takes topics/subreddits/seed accounts from the config. Run `--help` for flags.
 - **Surface adapter errors — don't ship a silent empty digest.** Adapters print clear stderr and
   exit non-zero on failure. If one reports an **Apify credit / usage-limit** problem (exit 4), tell

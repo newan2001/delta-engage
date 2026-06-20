@@ -32,8 +32,10 @@ from lib.apify import run_actor  # noqa: E402
 
 USER_AGENT = "delta-engage/1.0 (engagement-opportunity-finder)"
 OAUTH_TOKEN_URL = "https://www.reddit.com/api/v1/access_token"
-# Apify Reddit actor — no login required. Override with DELTA_ENGAGE_REDDIT_ACTOR if you prefer
-# another (e.g. trudax~reddit-scraper). Slug uses ~ in the API path.
+# Apify Reddit actor — no login required, but the LITE actor returns NO upvote/comment counts.
+# Override with DELTA_ENGAGE_REDDIT_ACTOR only if you've *rented* a paid actor that returns counts
+# (e.g. trudax~reddit-scraper 403s "actor-is-not-rented" on a normal BYOK plan — it is NOT a free
+# swap). The real free path to full engagement signal is --provider official (a free Reddit app).
 APIFY_REDDIT_ACTOR = os.environ.get("DELTA_ENGAGE_REDDIT_ACTOR", "trudax~reddit-scraper-lite")
 
 

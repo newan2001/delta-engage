@@ -112,16 +112,25 @@ def _to_signal(d, source):
     )
 
 
-def search_apify_cookieless(token, topics, profiles, max_items, days):
+def search_apify_cookieless(token, topics, profiles, max_items, days, max_keywords=5):
     """The apimaestro cookieless actor takes ONE keyword per run, so we loop over topics and
     aggregate. (Profile-URL monitoring needs LinkedIn member URNs, which this actor takes as
     `member_urns` — URL→URN resolution isn't wired yet; see DECISIONS. Topic search covers cold
     start regardless.)"""
-    keywords = [t.strip() for t in topics if t.strip()][:5]  # cap runs to control spend
+    all_kw = [t.strip() for t in topics if t.strip()]
+    keywords = all_kw[:max_keywords]  # one actor run per keyword → cap to control spend
     if not keywords:
         print("[linkedin] no topic keywords to search (this actor is keyword-driven).",
               file=sys.stderr)
         return []
+    # NO SILENT CAPS — say exactly what ran and what was dropped.
+    if len(all_kw) > len(keywords):
+        dropped = all_kw[len(keywords):]
+        print(f"[linkedin] searching {len(keywords)}/{len(all_kw)} topics (capped at "
+              f"{max_keywords} to control spend; raise with --max-keywords). "
+              f"Skipped this run: {', '.join(dropped)}", file=sys.stderr)
+    else:
+        print(f"[linkedin] searching all {len(keywords)} topics.", file=sys.stderr)
     per_kw = max(10, max_items // max(1, len(keywords)))
     date_filter = _date_filter(days)
     out = []
@@ -210,6 +219,8 @@ def main():
     ap.add_argument("--profiles", help="comma-separated LinkedIn profile URLs (overrides config)")
     ap.add_argument("--days", type=int, default=14)
     ap.add_argument("--max-items", type=int, default=60, help="cap for keyword discovery")
+    ap.add_argument("--max-keywords", type=int, default=5,
+                    help="max topics to search per run (one actor run each; caps spend)")
     ap.add_argument("--max-posts-per", type=int, default=5,
                     help="recent posts to pull per monitored seed profile")
     ap.add_argument("-o", "--output", required=True)
@@ -231,7 +242,8 @@ def main():
         sys.exit(1)
 
     # DISCOVERY (topics) + MONITORING (seed profiles), merged. normalize.py dedups across them.
-    signals = search_apify_cookieless(token, topics, profiles, args.max_items, args.days)
+    signals = search_apify_cookieless(token, topics, profiles, args.max_items, args.days,
+                                      args.max_keywords)
     if profiles:
         signals += monitor_profiles_cookieless(token, profiles, args.max_posts_per, args.days)
 

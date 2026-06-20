@@ -64,6 +64,12 @@ genuinely welcome*. Be honest about "would my comment add value here, or would i
 surfaces them in a separate *Peers & partnerships* section so the user can start collabs and
 conversations, exactly the relationship angle they're worth. Everything else is `"bucket": "engage"`.
 
+**Competitor intel is a first-class byproduct.** Keyword search will keep catching competitors —
+don't waste it. From the `peer_competitor` posts, synthesize a short **intel brief**: who's posting,
+their positioning / offers / claims, and any gaps or angles you could exploit. Write it to
+`RUNS/intel.md` and pass it to `digest.py --intel` (renders a *🔭 Competitor intel* section). It's
+intelligence, not an outreach target.
+
 Write `fit_score`, `intent`, and `bucket` onto each signal before running `rank.py`.
 
 ## Step 3 — Engagement potential (the script computes this, 0–1)

@@ -122,12 +122,24 @@ Apollo seeding path in Stage 3).
   firmographics, call `Apollo:apollo_mixed_people_api_search` (fully-qualified name) to get
   matching people → resolve their LinkedIn URLs → propose them as seeds. Confirm before adding.
 
-Also set the starting `topics` list — and this is where quality is won or lost: **topics are the
-ICP's pain language, NOT the service category.** Seed them from `icp.pain_language`, not from what
-the user sells. Searching the category ("EI consulting", "fractional CFO") returns competitors;
-searching the pain ("team keeps clashing", "cash flow is a mess and I'm flying blind") returns
-buyers. Show the topics for edit and say why they're phrased as problems. (Add a few category terms
-only if the user specifically wants to monitor competitors/peers for the partnerships bucket.)
+Also set the starting `topics` list — **this is where quality is won or lost.** Topics are the
+ICP's pain language, NOT the service category. Seed them from `icp.pain_language`, not from what the
+user sells.
+
+**Hard rule + self-check (do this every time — the model tends to default to category terms):**
+before saving, audit *each* topic with one question — *"would a BUYER post this, or only a
+SELLER/vendor?"* If it reads as a category, product class, vendor, or job-ad term, **it does not go
+in `topics`.** Rephrase it into the symptom the buyer voices, or move it to the partnerships-monitor
+list. Examples of the trap (recruiting):
+
+| ❌ category/vendor (returns competitors & job ads) | ✅ buyer pain (returns demand) |
+|---|---|
+| "AI recruiting", "applicant tracking system", "HireVue" | "drowning in applicants", "spending all day on phone screens", "how do I screen 300 resumes fast" |
+| "fractional CFO", "EI consulting" | "cash flow is a mess and I'm flying blind", "my team keeps having the same conflict" |
+
+Show the final topics for edit and say *why* they're phrased as problems. Category/vendor terms are
+allowed **only** in a separate competitor-monitor list (feeds the partnerships bucket + competitor
+intel), never in the buyer `topics`.
 
 ---
 
