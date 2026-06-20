@@ -140,15 +140,12 @@ def search_apify(token, subreddits, topics, limit_per, time_filter, days, max_ur
             raw_id=d.get("id", d.get("url", "")),
         ))
     if not out:
-        print("[reddit] RECOMMENDATION: the Apify lite actor is unreliable for Reddit search (it "
-              "often returns nothing and never includes engagement counts). For reliable, free, "
-              "full-signal Reddit results, use the official API: create a free 'script' app at "
-              "https://www.reddit.com/prefs/apps, set REDDIT_CLIENT_ID/SECRET, and run with "
-              "--provider official (config providers.reddit: \"official\").", file=sys.stderr)
+        print("[reddit] returned nothing this run — the lite actor is intermittently rate-limited "
+              "by Reddit (it already retried once). Try again, broaden your topics, or widen "
+              "--days.", file=sys.stderr)
     elif not any(s["score"] or s["num_comments"] for s in out):
-        print("[reddit] note: this Apify actor returned no upvote/comment counts — Reddit will "
-              "rank on recency + your fit score only. For full engagement signal, use the free "
-              "official API: --provider official (DECISIONS §Reddit).", file=sys.stderr)
+        print("[reddit] note: this actor returns no upvote/comment counts — Reddit ranks on "
+              "recency + your fit score this run.", file=sys.stderr)
     return out
 
 
