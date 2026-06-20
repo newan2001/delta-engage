@@ -277,6 +277,12 @@ Run only the adapters in `config.platforms`. Each emits `OpportunitySignal` JSON
 - LinkedIn is **cookieless actor only** — the script refuses cookie/session input. Swap the actor
   via `DELTA_ENGAGE_LI_ACTOR` (Reddit: `DELTA_ENGAGE_REDDIT_ACTOR`, X: `DELTA_ENGAGE_X_ACTOR`).
 - Each adapter takes topics/subreddits/seed accounts from the config. Run `--help` for flags.
+- **Surface adapter errors — don't ship a silent empty digest.** Adapters print clear stderr and
+  exit non-zero on failure. If one reports an **Apify credit / usage-limit** problem (exit 4), tell
+  the user plainly: out of Apify credit → top up at console.apify.com/billing or wait for the reset,
+  *or* switch Reddit to the free official path (`--provider official` + a Reddit app). A timeout/0-item
+  result is a *warning* (slow cold start or topics too narrow) — note it and suggest retry/broader
+  topics rather than presenting an empty run as success.
 
 Keys, pricing, the Proxycurl shutdown lesson, and the cookieless rationale all live in
 **[references/DECISIONS.md](references/DECISIONS.md)** — load it only if the user asks *why* a

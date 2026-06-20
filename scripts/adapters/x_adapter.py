@@ -20,6 +20,7 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from lib.opportunity_signal import make_signal  # noqa: E402
+from lib.apify import run_actor  # noqa: E402
 
 APIFY_X_ACTOR = os.environ.get("DELTA_ENGAGE_X_ACTOR", "apidojo~tweet-scraper")
 
@@ -32,29 +33,13 @@ def _load_config(path):
 
 
 def search_apify_x(token, topics, max_items, days):
-    import requests
     actor_input = {
         "searchTerms": [t.strip() for t in topics if t.strip()],
         "maxItems": max_items,
         "sort": "Latest",
         "tweetLanguage": "en",
     }
-    run = requests.post(
-        f"https://api.apify.com/v2/acts/{APIFY_X_ACTOR}/runs",
-        params={"token": token}, json=actor_input, timeout=60,
-    )
-    run.raise_for_status()
-    run_id = run.json()["data"]["id"]
-    st = None
-    for _ in range(90):
-        time.sleep(5)
-        st = requests.get(f"https://api.apify.com/v2/actor-runs/{run_id}",
-                          params={"token": token}, timeout=30).json()["data"]
-        if st["status"] in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
-            break
-    ds_id = st["defaultDatasetId"]
-    items = requests.get(f"https://api.apify.com/v2/datasets/{ds_id}/items",
-                         params={"token": token, "format": "json"}, timeout=60).json()
+    items = run_actor(token, APIFY_X_ACTOR, actor_input, label="x")
     cutoff = time.time() - days * 86400
     out = []
     for d in items:

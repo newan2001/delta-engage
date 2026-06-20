@@ -27,6 +27,7 @@ import time
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from lib.opportunity_signal import make_signal  # noqa: E402
+from lib.apify import run_actor  # noqa: E402
 
 # A cookieless / public post-search actor (confirmed on Apify, advertises "no login required").
 # Escape hatch — also cookieless, same token: set DELTA_ENGAGE_LI_ACTOR=harvestapi~linkedin-post-search
@@ -71,27 +72,9 @@ def _date_filter(days):
 
 
 def _run_actor(token, actor, actor_input):
-    """Start one actor run, poll to completion, return its dataset items."""
-    import requests
+    """Start one actor run, poll to completion, return its dataset items (cookieless-guarded)."""
     _assert_cookieless(actor_input)
-    run = requests.post(
-        f"https://api.apify.com/v2/acts/{actor}/runs",
-        params={"token": token}, json=actor_input, timeout=60,
-    )
-    run.raise_for_status()
-    run_id = run.json()["data"]["id"]
-    st = None
-    for _ in range(90):
-        time.sleep(5)
-        st = requests.get(f"https://api.apify.com/v2/actor-runs/{run_id}",
-                          params={"token": token}, timeout=30).json()["data"]
-        if st["status"] in ("SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"):
-            break
-    if not st or st["status"] != "SUCCEEDED":
-        print(f"[linkedin] run status: {st and st.get('status')}", file=sys.stderr)
-        return []
-    return requests.get(f"https://api.apify.com/v2/datasets/{st['defaultDatasetId']}/items",
-                        params={"token": token, "format": "json"}, timeout=60).json()
+    return run_actor(token, actor, actor_input, label="linkedin")
 
 
 def _vanity_from_url(url):
