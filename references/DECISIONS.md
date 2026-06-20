@@ -64,6 +64,23 @@ OAuth path returns full `score` + `num_comments`**, so for engagement-weighted R
 The adapter prints a one-line note when counts come back empty. (Reddit's public `*.json`
 enrichment was tested and is 403-blocked even for single requests — not a usable fallback.)
 
+### ⚠️ Verified live (2026-06): lite actor's keyword search is broken — use per-sub search URLs
+Tested two ways of searching the pain via the lite actor:
+- ❌ The actor's `searches` param returns **irrelevant junk** (querying "too many applicants to
+  screen" returned Destiny/AMD/AITA posts — it effectively ignores the query). So the original
+  Apify path, which mixed `/top/` feeds with global `searches` under one `maxItems` sorted `top`,
+  was never actually searching — it just dumped subreddit top feeds.
+- ✅ Passing per-subreddit **`/r/<sub>/search/?q=…&restrict_sr=1&sort=relevance`** URLs as
+  `startUrls` returns **on-point demand posts** (e.g. r/recruiting → "Too many Applicants, not
+  enough Positions!") — but **intermittently**: the same URL returned 6 results once and 0 on three
+  later identical runs (Reddit rate-limits the actor's scrape, worsened by repeated runs). The
+  adapter now builds these search URLs (sub × topic, capped + logged via `--max-queries`),
+  topics-without-subs fall back to a site-wide `/search/?q=`, and it **retries once on empty**.
+
+**Bottom line for Reddit keyword quality:** the **official API (`--provider official`) is the
+recommended path** — it does proper relevance search *and* returns engagement counts. The fixed
+Apify path is the zero-setup option; its lite actor still returns no counts (recency-ranked).
+
 ### LinkedIn cookieless via Apify
 - Needs `APIFY_API_TOKEN`. **Cookieless/public actors only** — `linkedin_adapter.py` refuses any
   input carrying a session cookie (`li_at`, `cookie`, etc.).

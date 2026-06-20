@@ -48,24 +48,67 @@ def _load_config(path):
 
 # --- default path: Apify (no login, single token) ------------------------------------------------
 
-def search_apify(token, subreddits, topics, limit_per, time_filter, days):
-    start_urls = [f"https://www.reddit.com/r/{s.strip().lstrip('r/').strip('/')}/top/?t={time_filter}"
-                  for s in subreddits if s.strip()]
+def _t_from_days(days):
+    """Reddit search `t` (time) param from a day window — don't over-restrict relevance search."""
+    if days <= 1:
+        return "day"
+    if days <= 7:
+        return "week"
+    if days <= 31:
+        return "month"
+    if days <= 366:
+        return "year"
+    return "all"
+
+
+def _apify_urls(subreddits, topics, days, max_urls):
+    """Build relevance-SEARCH URLs for the Apify path. Verified live: the lite actor's `searches`
+    param returns irrelevant junk, but it DOES scrape per-sub `/search/?q=…&restrict_sr=1` pages
+    correctly. So we search the pain (topics) within each subreddit — never mix `/top/` feeds with
+    a broken global search. Returns (urls, dropped_note)."""
+    from urllib.parse import quote
+    t = _t_from_days(days)
+    subs = [s.strip().lstrip("r/").strip("/") for s in subreddits if s.strip()]
+    qs = [q.strip() for q in topics if q.strip()]
+    urls = []
+    if subs and qs:                       # the good case: each pain phrase, searched in each sub
+        for s in subs:
+            for q in qs:
+                urls.append(f"https://www.reddit.com/r/{s}/search/?q={quote(q)}"
+                            f"&restrict_sr=1&sort=relevance&t={t}")
+    elif qs:                              # topics, no subs → site-wide relevance search
+        urls = [f"https://www.reddit.com/search/?q={quote(q)}&sort=relevance&t={t}" for q in qs]
+    elif subs:                           # subs, no topics → browse community top feeds
+        urls = [f"https://www.reddit.com/r/{s}/top/?t={t}" for s in subs]
+    dropped = ""
+    if len(urls) > max_urls:             # NO SILENT CAPS — say what was dropped
+        dropped = (f"[reddit] {len(urls)} sub×topic searches requested; running {max_urls} this run "
+                   f"(raise with --max-queries). Skipped {len(urls) - max_urls}.")
+        urls = urls[:max_urls]
+    return urls, dropped
+
+
+def search_apify(token, subreddits, topics, limit_per, time_filter, days, max_urls=12):
+    urls, dropped = _apify_urls(subreddits, topics, days, max_urls)
+    if dropped:
+        print(dropped, file=sys.stderr)
+    if not urls:
+        print("[reddit] nothing to search (no subreddits or topics).", file=sys.stderr)
+        return []
+    # Minimal input — verified live that the lite actor scrapes /search/ URLs with just these
+    # fields; adding the actor's own search* flags made it return nothing.
     actor_input = {
-        "searches": [t.strip() for t in topics if t.strip()],
-        "startUrls": [{"url": u} for u in start_urls],
-        "type": "posts",
-        "sort": "top",
-        "time": time_filter,
-        "maxItems": limit_per * max(1, len(start_urls) + len(topics)),
-        "maxPostCount": limit_per * max(1, len(start_urls) + len(topics)),
+        "startUrls": [{"url": u} for u in urls],
+        "maxItems": limit_per * len(urls),
         "skipComments": True,
-        "searchPosts": True,
-        "searchComments": False,
-        "searchCommunities": False,
-        "searchUsers": False,
     }
+    # The lite actor is intermittent on Reddit search (Reddit rate-limits the scrape) — retry once
+    # on empty before giving up.
     items = run_actor(token, APIFY_REDDIT_ACTOR, actor_input, label="reddit")
+    if not items:
+        print("[reddit] empty result — retrying once (the lite actor is flaky on Reddit search)…",
+              file=sys.stderr)
+        items = run_actor(token, APIFY_REDDIT_ACTOR, actor_input, label="reddit")
 
     cutoff = time.time() - days * 86400
     out = []
@@ -96,7 +139,13 @@ def search_apify(token, subreddits, topics, limit_per, time_filter, days):
             source_provider="reddit_apify",
             raw_id=d.get("id", d.get("url", "")),
         ))
-    if out and not any(s["score"] or s["num_comments"] for s in out):
+    if not out:
+        print("[reddit] RECOMMENDATION: the Apify lite actor is unreliable for Reddit search (it "
+              "often returns nothing and never includes engagement counts). For reliable, free, "
+              "full-signal Reddit results, use the official API: create a free 'script' app at "
+              "https://www.reddit.com/prefs/apps, set REDDIT_CLIENT_ID/SECRET, and run with "
+              "--provider official (config providers.reddit: \"official\").", file=sys.stderr)
+    elif not any(s["score"] or s["num_comments"] for s in out):
         print("[reddit] note: this Apify actor returned no upvote/comment counts — Reddit will "
               "rank on recency + your fit score only. For full engagement signal, use the free "
               "official API: --provider official (DECISIONS §Reddit).", file=sys.stderr)
@@ -181,6 +230,8 @@ def main():
     ap.add_argument("--days", type=int, default=10, help="only posts from the last N days")
     ap.add_argument("--time-filter", default="week", help="reddit window: day/week/month")
     ap.add_argument("--limit-per", type=int, default=25, help="max posts per subreddit/query")
+    ap.add_argument("--max-queries", type=int, default=12,
+                    help="max sub×topic search URLs per run (caps Apify spend; logged if hit)")
     ap.add_argument("-o", "--output", required=True)
     args = ap.parse_args()
 
@@ -214,7 +265,7 @@ def main():
                   file=sys.stderr)
             sys.exit(1)
         signals = search_apify(token, subreddits, topics, args.limit_per,
-                               args.time_filter, args.days)
+                               args.time_filter, args.days, args.max_queries)
 
     with open(args.output, "w") as f:
         json.dump(signals, f, indent=2)
